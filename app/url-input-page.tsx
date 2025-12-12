@@ -25,15 +25,6 @@ function normalizeAndValidateTargetUrl(raw: string): string | null {
   return url.toString();
 }
 
-function encodeUrlToBase64Url(input: string): string {
-  // UTF-8 -> base64 -> base64url
-  const bytes = new TextEncoder().encode(input);
-  let binary = "";
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  const b64 = btoa(binary);
-  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
-}
-
 export function UrlInputPage({
   heading = "PWA Wrap",
   subheading,
@@ -61,11 +52,6 @@ export function UrlInputPage({
   }, []);
 
   const normalizedInput = useMemo(() => normalizeAndValidateTargetUrl(input), [input]);
-  const wrapperUrl = useMemo(() => {
-    if (!normalizedInput) return "";
-    const encoded = encodeUrlToBase64Url(normalizedInput);
-    return `/w/${encoded}`;
-  }, [normalizedInput]);
 
   if (isReady && storedUrl) {
     return (
@@ -161,9 +147,7 @@ export function UrlInputPage({
             {!normalizedInput ? (
               <div style={{ opacity: 0.75 }}>Enter a valid http(s) URL.</div>
             ) : (
-              <div style={{ opacity: 0.85, wordBreak: "break-word" }}>
-                Wrapper path: <code>{wrapperUrl}</code>
-              </div>
+              <div style={{ opacity: 0.85 }}>Click Set to save and load it.</div>
             )}
           </div>
         </div>

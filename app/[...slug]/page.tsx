@@ -9,7 +9,7 @@ export default function CatchAllPage({
   return (
     <UrlInputPage
       heading="PWA Wrap"
-      subheading={`This path (${path}) is not the wrapper route. Paste a URL below to generate a /w/... link.`}
+      subheading={`This path (${path}) is not a page. Paste a URL below and set it to load it full-screen.`}
       showHomeLink={true}
     />
   );
