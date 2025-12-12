@@ -3,7 +3,7 @@ import { UrlInputPage } from "../url-input-page";
 export default function CatchAllPage({
   params
 }: {
-  params: { slug?: string[] };
+  params: { slug: string[] };
 }) {
   const path = `/${(params.slug ?? []).join("/")}`;
   return (
