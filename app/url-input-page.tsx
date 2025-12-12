@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+const STORAGE_KEY = "pwa-wrap:url";
+
 function normalizeAndValidateTargetUrl(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
@@ -41,20 +43,51 @@ export function UrlInputPage({
   subheading?: string;
   showHomeLink?: boolean;
 }) {
-  const [origin, setOrigin] = useState<string>("");
   const [input, setInput] = useState<string>("");
+  const [storedUrl, setStoredUrl] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    setOrigin(window.location.origin);
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY) ?? "";
+      const normalized = normalizeAndValidateTargetUrl(raw);
+      setStoredUrl(normalized);
+      if (!normalized && raw) window.localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      setStoredUrl(null);
+    } finally {
+      setIsReady(true);
+    }
   }, []);
 
-  const normalized = useMemo(() => normalizeAndValidateTargetUrl(input), [input]);
-
+  const normalizedInput = useMemo(() => normalizeAndValidateTargetUrl(input), [input]);
   const wrapperUrl = useMemo(() => {
-    if (!origin || !normalized) return "";
-    const encoded = encodeUrlToBase64Url(normalized);
-    return `${origin}/w/${encoded}`;
-  }, [origin, normalized]);
+    if (!normalizedInput) return "";
+    const encoded = encodeUrlToBase64Url(normalizedInput);
+    return `/w/${encoded}`;
+  }, [normalizedInput]);
+
+  if (isReady && storedUrl) {
+    return (
+      <main style={{ margin: 0, padding: 0 }}>
+        <iframe
+          title={storedUrl}
+          src={storedUrl}
+          allow="fullscreen"
+          allowFullScreen
+          referrerPolicy="no-referrer"
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100%",
+            height: "100dvh",
+            border: "0",
+            background: "#0b0f19"
+          }}
+        />
+      </main>
+    );
+  }
 
   return (
     <main
@@ -68,12 +101,8 @@ export function UrlInputPage({
       <div style={{ maxWidth: 760, width: "100%" }}>
         <h1 style={{ margin: 0, fontSize: 28 }}>{heading}</h1>
         <p style={{ opacity: 0.85, lineHeight: 1.5 }}>
-          {subheading ?? (
-            <>
-              Paste a URL below and this site will generate a wrapper link in the form{" "}
-              <code>/w/base64url(url)</code>.
-            </>
-          )}
+          {subheading ??
+            "Paste a URL below, click Set, and it will be saved on this device. Next time the app opens it will load that URL automatically."}
         </p>
 
         <div
@@ -108,20 +137,32 @@ export function UrlInputPage({
             }}
           />
 
-          <div style={{ marginTop: 12, opacity: 0.9 }}>
-            <div style={{ fontSize: 13, opacity: 0.8 }}>Generated wrapper link</div>
-            {!origin ? (
-              <div style={{ marginTop: 6, opacity: 0.75 }}>Detecting current domain...</div>
-            ) : !normalized ? (
-              <div style={{ marginTop: 6, opacity: 0.75 }}>Enter a valid http(s) URL.</div>
+          <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "center" }}>
+            <button
+              type="button"
+              onClick={() => {
+                if (!normalizedInput) return;
+                window.localStorage.setItem(STORAGE_KEY, normalizedInput);
+                window.location.reload();
+              }}
+              disabled={!normalizedInput}
+              style={{
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: normalizedInput ? "#2b5cff" : "rgba(255,255,255,0.08)",
+                color: "inherit",
+                cursor: normalizedInput ? "pointer" : "not-allowed"
+              }}
+            >
+              Set
+            </button>
+
+            {!normalizedInput ? (
+              <div style={{ opacity: 0.75 }}>Enter a valid http(s) URL.</div>
             ) : (
-              <div style={{ marginTop: 6, wordBreak: "break-word" }}>
-                <code style={{ display: "block", whiteSpace: "pre-wrap" }}>{wrapperUrl}</code>
-                <div style={{ marginTop: 10 }}>
-                  <Link href={wrapperUrl} style={{ color: "#8ab4ff" }}>
-                    Open wrapper
-                  </Link>
-                </div>
+              <div style={{ opacity: 0.85, wordBreak: "break-word" }}>
+                Wrapper path: <code>{wrapperUrl}</code>
               </div>
             )}
           </div>
